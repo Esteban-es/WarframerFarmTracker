@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warframe Farm Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar: Project List -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-top">
+                    <h1>Warframe Farm Tracker</h1>
+                    <div class="lang-switch" role="group" data-i18n-attr="aria-label:nav.langGroup">
+                        <button type="button" class="lang-btn is-active" data-lang="es" aria-pressed="true">ES</button>
+                        <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-small" id="btn-new-project" data-i18n="nav.newProject">+ Nuevo Proyecto</button>
+            </div>
+            <ul class="project-list" id="project-list"></ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- No project selected view -->
+            <div class="welcome-view" id="welcome-view">
+                <div class="welcome-card">
+                    <svg class="welcome-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <h2 data-i18n="welcome.title">Bienvenido, Tenno</h2>
+                    <p data-i18n="welcome.text">Crea un nuevo proyecto o selecciona uno existente para comenzar a trackear tus farmeos.</p>
+                    <button class="btn btn-primary" id="btn-create-first" data-i18n="welcome.cta">Crear mi primer proyecto</button>
+                </div>
+            </div>
+
+            <!-- Project view -->
+            <div class="project-view hidden" id="project-view">
+                <header class="project-header">
+                    <div class="project-info">
+                        <button class="btn btn-icon btn-back" id="btn-back" data-i18n-attr="aria-label:project.back">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 id="project-name"></h2>
+                            <p class="project-activity" id="project-activity"></p>
+                        </div>
+                    </div>
+                    <div class="project-actions">
+                        <button class="btn btn-secondary" id="btn-copy-progress" data-i18n="project.copyProgress">Copiar Progreso</button>
+                        <button class="btn btn-danger" id="btn-delete-project" data-i18n="project.delete">Eliminar</button>
+                    </div>
+                </header>
+
+                <!-- Global Counter -->
+                <section class="counter-section">
+                    <div class="counter-display">
+                        <span class="counter-label" data-i18n="counter.rotationsDone">Rotaciones realizadas</span>
+                        <span class="counter-value" id="counter-value">0</span>
+                    </div>
+                    <div class="counter-groups">
+                        <!-- Vuelta completa: suma 1 a A, B y C -->
+                        <div class="counter-group">
+                            <span class="counter-group-label"><span data-i18n="counter.fullLap">Vuelta completa</span><small data-i18n="counter.fullLapHint">Afecta a A, B y C</small></span>
+                            <div class="counter-controls">
+                                <button class="btn btn-counter btn-counter-sm" id="btn-decrement" data-i18n-attr="aria-label:counter.subtractLap">−1</button>
+                                <button class="btn btn-counter btn-counter-sm" id="btn-increment" data-i18n-attr="aria-label:counter.addLap">+1</button>
+                            </div>
+                        </div>
+                        <!-- Contadores específicos por rotación -->
+                        <div class="rotation-counters" id="rotation-counters">
+                            <div class="rotation-counter">
+                                <span class="rotation-tag tag-a">A</span>
+                                <button class="btn btn-step" data-rot="A" data-delta="-1" data-i18n-attr="aria-label:counter.rotMinus.A">−</button>
+                                <span class="rotation-value" id="rot-value-A">0</span>
+                                <button class="btn btn-step" data-rot="A" data-delta="1" data-i18n-attr="aria-label:counter.rotPlus.A">+</button>
+                            </div>
+                            <div class="rotation-counter">
+                                <span class="rotation-tag tag-b">B</span>
+                                <button class="btn btn-step" data-rot="B" data-delta="-1" data-i18n-attr="aria-label:counter.rotMinus.B">−</button>
+                                <span class="rotation-value" id="rot-value-B">0</span>
+                                <button class="btn btn-step" data-rot="B" data-delta="1" data-i18n-attr="aria-label:counter.rotPlus.B">+</button>
+                            </div>
+                            <div class="rotation-counter">
+                                <span class="rotation-tag tag-c">C</span>
+                                <button class="btn btn-step" data-rot="C" data-delta="-1" data-i18n-attr="aria-label:counter.rotMinus.C">−</button>
+                                <span class="rotation-value" id="rot-value-C">0</span>
+                                <button class="btn btn-step" data-rot="C" data-delta="1" data-i18n-attr="aria-label:counter.rotPlus.C">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Plan de farmeo: tiempo estimado + ubicaciones pendientes -->
+                <section class="plan-section hidden" id="plan-section">
+                    <div class="plan-card">
+                        <h3 data-i18n="plan.estimatedTime">Tiempo estimado</h3>
+                        <div class="time-input-row">
+                            <label for="mission-time-input" data-i18n="plan.minutesPerMission">Minutos por misión</label>
+                            <input type="number" id="mission-time-input" min="0" step="0.5" placeholder="5" inputmode="decimal">
+                        </div>
+                        <ul class="estimate-list">
+                            <li>
+                                <span class="estimate-label" data-i18n="plan.expected">Esperado</span>
+                                <span class="estimate-detail" id="estimate-expected">—</span>
+                                <strong class="estimate-time" id="time-expected">—</strong>
+                            </li>
+                            <li>
+                                <span class="estimate-label" data-i18n="plan.guaranteed">Garantizado</span>
+                                <span class="estimate-detail" id="estimate-guaranteed">—</span>
+                                <strong class="estimate-time" id="time-guaranteed">—</strong>
+                            </li>
+                        </ul>
+                        <p class="estimate-hint" data-i18n="plan.hint">Calculado con las rotaciones que faltan por completar.</p>
+                    </div>
+                    <div class="plan-card">
+                        <h3 data-i18n="plan.pendingLocations">Ubicaciones pendientes</h3>
+                        <ul class="location-list" id="location-list"></ul>
+                    </div>
+                </section>
+
+                <!-- Import Section -->
+                <section class="import-section" id="import-section">
+                    <h3 data-i18n="import.title">Importar piezas desde Wiki</h3>
+                    <p class="import-hint" data-i18n="import.hint">Pega el contenido copiado de la wiki de Warframe (tablas de drop)</p>
+                    <textarea class="import-textarea" id="import-textarea" placeholder="Receiver
+Elite Sanctuary Onslaught / A
+2.51%
+~ 39 A Rotations
+271 ± 90 A Rotations
+
+Stock
+Elite Sanctuary Onslaught / A
+2.51%
+~ 39 A Rotations
+271 ± 90 A Rotations"></textarea>
+                    <div class="import-preview hidden" id="import-preview">
+                        <h4><span data-i18n="import.detected">Piezas detectadas:</span> <span id="preview-count">0</span></h4>
+                        <ul class="preview-list" id="preview-list"></ul>
+                        <button class="btn btn-primary" id="btn-confirm-import" data-i18n="import.confirm">Confirmar Importación</button>
+                    </div>
+                </section>
+
+                <!-- Parts Grid -->
+                <section class="parts-section" id="parts-section">
+                    <div class="section-header">
+                        <h3 data-i18n="parts.title">Piezas</h3>
+                        <div class="header-right">
+                            <div class="progress-summary" id="progress-summary">
+                                <span class="progress-text"><span data-i18n="parts.obtainedOf">Obtenidas:</span> <strong id="obtained-count">0</strong> / <strong id="total-count">0</strong></span>
+                                <span class="progress-percent" id="progress-percent">0%</span>
+                            </div>
+                            <button class="btn btn-secondary btn-small hidden" id="btn-toggle-import" data-i18n="parts.edit">Modificar piezas</button>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <div class="parts-block hidden" id="pending-block">
+                        <h4 class="parts-block-title"><span data-i18n="parts.pending">Pendientes</span> <span class="block-count" id="pending-count">0</span></h4>
+                        <div class="parts-grid" id="parts-grid"></div>
+                    </div>
+                    <div class="parts-block hidden" id="obtained-block">
+                        <h4 class="parts-block-title is-done"><span data-i18n="parts.obtained">Obtenidas</span> <span class="block-count" id="obtained-block-count">0</span></h4>
+                        <div class="parts-grid parts-grid--compact" id="obtained-grid"></div>
+                    </div>
+                    <div class="empty-state hidden" id="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        <p data-i18n="parts.empty">No hay piezas aún. Pega la tabla de la wiki en el importador.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay hidden" id="modal-overlay"></div>
+
+    <!-- New/Edit Project Modal -->
+    <div class="modal hidden" id="project-modal">
+        <div class="modal-content">
+            <h3 id="modal-title" data-i18n="modal.newProject">Nuevo Proyecto</h3>
+            <form id="project-form">
+                <div class="form-group">
+                    <label for="project-name-input" data-i18n="modal.projectName">Nombre del Proyecto *</label>
+                    <input type="text" id="project-name-input" required data-i18n-attr="placeholder:modal.namePlaceholder" placeholder="Ej: Lato Vandal, Khora, Sporothrix">
+                </div>
+                <div class="form-group">
+                    <label for="project-activity-input" data-i18n="modal.activity">Actividad (opcional)</label>
+                    <input type="text" id="project-activity-input" data-i18n-attr="placeholder:modal.activityPlaceholder" placeholder="Ej: Elite Sanctuary Onslaught, Arbitrations">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal" data-i18n="common.cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="common.save">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal hidden" id="delete-modal">
+        <div class="modal-content modal-small">
+            <h3 data-i18n="modal.deleteProject">Eliminar Proyecto</h3>
+            <p data-i18n-html="modal.deleteConfirm">¿Estás seguro de que quieres eliminar <strong id="delete-project-name"></strong>? Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-delete" data-i18n="common.cancel">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-delete" data-i18n="common.delete">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast hidden" id="toast"></div>
+
+    <script src="i18n.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
